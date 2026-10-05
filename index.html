@@ -1,0 +1,679 @@
+
+html_final = """<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Остров сокровищ: Мышки и Пчёлы</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Arial', sans-serif;
+            background: linear-gradient(135deg, #a8e6cf 0%, #dcedc1 50%, #ffd3b6 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.5);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #34495e;
+            font-size: 1.2em;
+            margin-bottom: 30px;
+        }
+
+        .game-area {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            min-height: 500px;
+            position: relative;
+            background: linear-gradient(to bottom, #90EE90, #98FB98);
+            border-radius: 20px;
+            padding: 40px 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .character-path {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .path-container {
+            width: 200px;
+            height: 400px;
+            position: relative;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .steps {
+            display: flex;
+            flex-direction: column-reverse;
+            justify-content: space-between;
+            height: 100%;
+        }
+
+        .step {
+            width: 100%;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            margin: 5px 0;
+            transition: all 0.3s ease;
+        }
+
+        .step.active {
+            background: #FFD700;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+        }
+
+        .character {
+            font-size: 60px;
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: bottom 0.5s ease;
+            z-index: 10;
+        }
+
+        .destination {
+            font-size: 50px;
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .word-display {
+            text-align: center;
+            margin: 30px 0;
+            padding: 30px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .current-word {
+            font-size: 4em;
+            color: #2c3e50;
+            font-weight: bold;
+            margin-bottom: 15px;
+            animation: bounceIn 0.6s ease;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .current-word:hover {
+            transform: scale(1.05);
+            color: #3498db;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .phonetic-hint {
+            font-size: 1.3em;
+            color: #7f8c8d;
+            margin-bottom: 15px;
+            font-style: italic;
+            font-family: 'Courier New', monospace;
+        }
+
+        .sound-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border-radius: 50px;
+            cursor: pointer;
+            margin: 15px 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .sound-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .sound-button.playing {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 20px 40px;
+            font-size: 1.5em;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-mouse {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-bee {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: white;
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+        }
+
+        .score-item {
+            text-align: center;
+            font-size: 1.2em;
+            color: #2c3e50;
+        }
+
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background-color: #f00;
+            animation: confetti-fall 3s linear forwards;
+            z-index: 1000;
+        }
+
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(-100px) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        .start-screen, .end-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 600px;
+        }
+
+        .modal-content h2 {
+            color: #2c3e50;
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+
+        .modal-content p {
+            color: #34495e;
+            font-size: 1.2em;
+            margin-bottom: 30px;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 40px;
+            font-size: 1.3em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-start:hover {
+            transform: scale(1.05);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+
+        .tip-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 10px 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-size: 0.9em;
+            color: #856404;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="startScreen" class="start-screen">
+        <div class="modal-content">
+            <h2>🐭 Остров сокровищ: Мышки и Пчёлы 🐝</h2>
+            <p>Помоги мышке добраться до норки, а пчёлке - до цветов!<br><br>
+            Определи звук в слове:<br>
+            🐭 Краткий [ɪ] - помоги мышке<br>
+            🐝 Долгий [i:] - помоги пчёлке<br><br>
+            <div class="tip-box">
+                💡 <strong>Совет:</strong> Нажми на слово или кнопку 🔊, чтобы услышать правильное произношение!
+            </div></p>
+            <button class="btn-start" onclick="startGame()">Начать игру!</button>
+        </div>
+    </div>
+
+    <div id="endScreen" class="end-screen hidden">
+        <div class="modal-content">
+            <h2>🎉 Поздравляем! 🎉</h2>
+            <p id="endMessage"></p>
+            <button class="btn-start" onclick="restartGame()">Играть снова</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1>🐭 Остров сокровищ: Мышки и Пчёлы 🐝</h1>
+        <p class="subtitle">Помоги героям добраться до цели!</p>
+
+        <div class="score-board">
+            <div class="score-item">
+                <div>🐭 Мышка</div>
+                <div id="mouseScore">0 / 10</div>
+            </div>
+            <div class="score-item">
+                <div>Прогресс</div>
+                <div id="totalProgress">0 / 20</div>
+            </div>
+            <div class="score-item">
+                <div>🐝 Пчёлка</div>
+                <div id="beeScore">0 / 10</div>
+            </div>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+        </div>
+
+        <div class="game-area">
+            <div class="character-path">
+                <div class="path-container">
+                    <div class="destination">🏠</div>
+                    <div class="steps" id="mouseSteps"></div>
+                    <div class="character" id="mouseCharacter" style="bottom: 0px;">🐭</div>
+                </div>
+            </div>
+
+            <div class="word-display">
+                <div class="current-word" id="currentWord" onclick="playAudio()">Готовы?</div>
+                <div class="phonetic-hint" id="phoneticHint"></div>
+                
+                <button class="sound-button" id="soundBtn" onclick="playAudio()">
+                    🔊 Прослушать произношение
+                </button>
+                
+                <div class="tip-box">
+                    👆 Нажми на слово или кнопку выше, чтобы услышать произношение от носителя языка!
+                </div>
+                
+                <div class="buttons">
+                    <button class="btn btn-mouse" onclick="checkAnswer('short')">
+                        🐭 Краткий [ɪ]
+                    </button>
+                    <button class="btn btn-bee" onclick="checkAnswer('long')">
+                        🐝 Долгий [i:]
+                    </button>
+                </div>
+            </div>
+
+            <div class="character-path">
+                <div class="path-container">
+                    <div class="destination">🌸</div>
+                    <div class="steps" id="beeSteps"></div>
+                    <div class="character" id="beeCharacter" style="bottom: 0px;">🐝</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var words = [
+            { word: 'big', type: 'short', phonetic: '[bɪg]' },
+            { word: 'see', type: 'long', phonetic: '[siː]' },
+            { word: 'sit', type: 'short', phonetic: '[sɪt]' },
+            { word: 'tree', type: 'long', phonetic: '[triː]' },
+            { word: 'fish', type: 'short', phonetic: '[fɪʃ]' },
+            { word: 'she', type: 'long', phonetic: '[ʃiː]' },
+            { word: 'six', type: 'short', phonetic: '[sɪks]' },
+            { word: 'three', type: 'long', phonetic: '[θriː]' },
+            { word: 'kid', type: 'short', phonetic: '[kɪd]' },
+            { word: 'me', type: 'long', phonetic: '[miː]' },
+            { word: 'win', type: 'short', phonetic: '[wɪn]' },
+            { word: 'he', type: 'long', phonetic: '[hiː]' },
+            { word: 'bin', type: 'short', phonetic: '[bɪn]' },
+            { word: 'we', type: 'long', phonetic: '[wiː]' },
+            { word: 'lip', type: 'short', phonetic: '[lɪp]' },
+            { word: 'bee', type: 'long', phonetic: '[biː]' },
+            { word: 'hit', type: 'short', phonetic: '[hɪt]' },
+            { word: 'green', type: 'long', phonetic: '[ɡriːn]' },
+            { word: 'pig', type: 'short', phonetic: '[pɪg]' },
+            { word: 'clean', type: 'long', phonetic: '[kliːn]' }
+        ];
+
+        var currentIndex = 0;
+        var mouseProgress = 0;
+        var beeProgress = 0;
+        var correctAnswers = 0;
+        var audioPlayer = null;
+
+        function initGame() {
+            createSteps();
+            updateDisplay();
+        }
+
+        function createSteps() {
+            var mouseStepsContainer = document.getElementById('mouseSteps');
+            var beeStepsContainer = document.getElementById('beeSteps');
+            
+            mouseStepsContainer.innerHTML = '';
+            beeStepsContainer.innerHTML = '';
+
+            for (var i = 0; i < 10; i++) {
+                var mouseStep = document.createElement('div');
+                mouseStep.className = 'step';
+                mouseStep.id = 'mouse-step-' + i;
+                mouseStepsContainer.appendChild(mouseStep);
+
+                var beeStep = document.createElement('div');
+                beeStep.className = 'step';
+                beeStep.id = 'bee-step-' + i;
+                beeStepsContainer.appendChild(beeStep);
+            }
+        }
+
+        function startGame() {
+            document.getElementById('startScreen').classList.add('hidden');
+            initGame();
+        }
+
+        function updateDisplay() {
+            if (currentIndex < words.length) {
+                var currentWordObj = words[currentIndex];
+                document.getElementById('currentWord').textContent = currentWordObj.word;
+                document.getElementById('phoneticHint').textContent = currentWordObj.phonetic;
+                document.getElementById('mouseScore').textContent = mouseProgress + ' / 10';
+                document.getElementById('beeScore').textContent = beeProgress + ' / 10';
+                document.getElementById('totalProgress').textContent = currentIndex + ' / 20';
+                
+                var progressPercent = (currentIndex / 20) * 100;
+                document.getElementById('progressBar').style.width = progressPercent + '%';
+                
+                // Reset button state
+                var soundBtn = document.getElementById('soundBtn');
+                soundBtn.classList.remove('playing');
+                soundBtn.innerHTML = '🔊 Прослушать произношение';
+            } else {
+                endGame();
+            }
+        }
+
+        function playAudio() {
+            if (currentIndex >= words.length) return;
+            
+            var word = words[currentIndex].word;
+            var soundBtn = document.getElementById('soundBtn');
+            
+            // Show loading state
+            soundBtn.classList.add('playing');
+            soundBtn.innerHTML = '⏳ Загрузка... <span class="loading"></span>';
+            
+            // Using Forvo API or alternative high-quality pronunciation service
+            // Alternative: Use Google Translate TTS as fallback
+            var audioUrl = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q=' + encodeURIComponent(word);
+            
+            if (audioPlayer) {
+                audioPlayer.pause();
+                audioPlayer = null;
+            }
+            
+            audioPlayer = new Audio(audioUrl);
+            
+            audioPlayer.oncanplaythrough = function() {
+                soundBtn.classList.remove('playing');
+                soundBtn.innerHTML = '🔊 Прослушать произношение';
+                audioPlayer.play();
+            };
+            
+            audioPlayer.onerror = function() {
+                soundBtn.classList.remove('playing');
+                soundBtn.innerHTML = '❌ Ошибка загрузки';
+                setTimeout(function() {
+                    soundBtn.innerHTML = '🔊 Прослушать произношение';
+                }, 2000);
+            };
+            
+            audioPlayer.onended = function() {
+                soundBtn.classList.remove('playing');
+                soundBtn.innerHTML = '🔊 Прослушать ещё раз';
+            };
+            
+            audioPlayer.load();
+        }
+
+        function checkAnswer(answerType) {
+            if (currentIndex >= words.length) return;
+
+            var currentWordObj = words[currentIndex];
+            var isCorrect = currentWordObj.type === answerType;
+
+            if (isCorrect) {
+                correctAnswers++;
+                
+                if (answerType === 'short') {
+                    mouseProgress++;
+                    moveCharacter('mouse', mouseProgress);
+                } else {
+                    beeProgress++;
+                    moveCharacter('bee', beeProgress);
+                }
+
+                createConfetti();
+                
+                // Auto-play pronunciation on correct answer
+                setTimeout(function() {
+                    playAudio();
+                }, 500);
+                
+                setTimeout(function() {
+                    currentIndex++;
+                    updateDisplay();
+                }, 2000);
+            } else {
+                var wordDisplay = document.querySelector('.current-word');
+                wordDisplay.style.animation = 'none';
+                setTimeout(function() {
+                    wordDisplay.style.animation = 'bounceIn 0.6s ease';
+                }, 10);
+                
+                alert('Попробуй ещё раз! Подумай: это короткий или длинный звук?');
+            }
+        }
+
+        function moveCharacter(character, progress) {
+            var charElement = document.getElementById(character + 'Character');
+            var stepHeight = 35;
+            var newBottom = progress * stepHeight;
+            charElement.style.bottom = newBottom + 'px';
+
+            var step = document.getElementById(character + '-step-' + (progress - 1));
+            if (step) {
+                step.classList.add('active');
+            }
+        }
+
+        function createConfetti() {
+            var colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+            
+            for (var i = 0; i < 50; i++) {
+                setTimeout(function() {
+                    var confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                    document.body.appendChild(confetti);
+
+                    setTimeout(function() {
+                        confetti.remove();
+                    }, 3000);
+                }, i * 30);
+            }
+        }
+
+        function endGame() {
+            var endScreen = document.getElementById('endScreen');
+            var endMessage = document.getElementById('endMessage');
+            
+            var message = '';
+            if (correctAnswers === 20) {
+                message = '🌟 Отлично! Все слова правильные! Ты настоящий эксперт! 🌟';
+            } else if (correctAnswers >= 15) {
+                message = '👍 Хорошая работа! Правильных ответов: ' + correctAnswers + ' из 20';
+            } else {
+                message = '💪 Молодец! Правильных ответов: ' + correctAnswers + ' из 20. Попробуй ещё раз!';
+            }
+            
+            endMessage.textContent = message;
+            endScreen.classList.remove('hidden');
+            createConfetti();
+        }
+
+        function restartGame() {
+            document.getElementById('endScreen').classList.add('hidden');
+            currentIndex = 0;
+            mouseProgress = 0;
+            beeProgress = 0;
+            correctAnswers = 0;
+            
+            document.getElementById('mouseCharacter').style.bottom = '0px';
+            document.getElementById('beeCharacter').style.bottom = '0px';
+            
+            if (audioPlayer) {
+                audioPlayer.pause();
+                audioPlayer = null;
+            }
+            
+            initGame();
+        }
+    </script>
+</body>
+</html>"""
+
+with open('phonics_game_final.html', 'w', encoding='utf-8') as f:
+    f.write(html_final)
+
+print("Финальная версия игры успешно создана!")
+print("Размер файла:", len(html_final), "символов")
+print("\nКлючевые улучшения:")
+print("1. Встроенное аудио без перехода на другие страницы")
+print("2. Использование Google Translate TTS для качественного произношения")
+print("3. Автоматическое воспроизведение при правильном ответе")
+print("4. Возможность повторного прослушивания")
+print("5. Индикатор загрузки во время воспроизведения")
+
+ # Result 
+Финальная версия игры успешно создана!
+Размер файла: 21216 символов
+
+Ключевые улучшения:
+1. Встроенное аудио без перехода на другие страницы
+2. Использование Google Translate TTS для качественного произношения
+3. Автоматическое воспроизведение при правильном ответе
+4. Возможность повторного прослушивания
+5. Индикатор загрузки во время воспроизведения
