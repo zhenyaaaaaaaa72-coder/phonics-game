@@ -1,5 +1,4 @@
-
-html_final = """<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -166,6 +165,7 @@ html_final = """<!DOCTYPE html>
 
         .sound-button.playing {
             animation: pulse 1s infinite;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         }
 
         @keyframes pulse {
@@ -318,21 +318,6 @@ html_final = """<!DOCTYPE html>
             font-size: 0.9em;
             color: #856404;
         }
-
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255,255,255,.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s ease-in-out infinite;
-            margin-left: 10px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
     </style>
 </head>
 <body>
@@ -344,7 +329,7 @@ html_final = """<!DOCTYPE html>
             🐭 Краткий [ɪ] - помоги мышке<br>
             🐝 Долгий [i:] - помоги пчёлке<br><br>
             <div class="tip-box">
-                💡 <strong>Совет:</strong> Нажми на слово или кнопку 🔊, чтобы услышать правильное произношение!
+                💡 <strong>Совет:</strong> Нажми на слово или кнопку 🔊, чтобы услышать произношение!
             </div></p>
             <button class="btn-start" onclick="startGame()">Начать игру!</button>
         </div>
@@ -399,7 +384,7 @@ html_final = """<!DOCTYPE html>
                 </button>
                 
                 <div class="tip-box">
-                    👆 Нажми на слово или кнопку выше, чтобы услышать произношение от носителя языка!
+                    👆 Нажми на слово или кнопку выше, чтобы услышать произношение!
                 </div>
                 
                 <div class="buttons">
@@ -450,7 +435,6 @@ html_final = """<!DOCTYPE html>
         var mouseProgress = 0;
         var beeProgress = 0;
         var correctAnswers = 0;
-        var audioPlayer = null;
 
         function initGame() {
             createSteps();
@@ -494,7 +478,6 @@ html_final = """<!DOCTYPE html>
                 var progressPercent = (currentIndex / 20) * 100;
                 document.getElementById('progressBar').style.width = progressPercent + '%';
                 
-                // Reset button state
                 var soundBtn = document.getElementById('soundBtn');
                 soundBtn.classList.remove('playing');
                 soundBtn.innerHTML = '🔊 Прослушать произношение';
@@ -507,43 +490,44 @@ html_final = """<!DOCTYPE html>
             if (currentIndex >= words.length) return;
             
             var word = words[currentIndex].word;
+            var type = words[currentIndex].type;
             var soundBtn = document.getElementById('soundBtn');
             
-            // Show loading state
-            soundBtn.classList.add('playing');
-            soundBtn.innerHTML = '⏳ Загрузка... <span class="loading"></span>';
-            
-            // Using Forvo API or alternative high-quality pronunciation service
-            // Alternative: Use Google Translate TTS as fallback
-            var audioUrl = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q=' + encodeURIComponent(word);
-            
-            if (audioPlayer) {
-                audioPlayer.pause();
-                audioPlayer = null;
+            // Используем Web Speech API
+            if ('speechSynthesis' in window) {
+                // Отменяем предыдущее воспроизведение
+                window.speechSynthesis.cancel();
+                
+                var utterance = new SpeechSynthesisUtterance(word);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.8;
+                utterance.pitch = 1;
+                
+                // Для долгих звуков немного замедляем
+                if (type === 'long') {
+                    utterance.rate = 0.7;
+                }
+                
+                soundBtn.classList.add('playing');
+                soundBtn.innerHTML = '🔊 Воспроизводится...';
+                
+                utterance.onend = function() {
+                    soundBtn.classList.remove('playing');
+                    soundBtn.innerHTML = '🔊 Прослушать ещё раз';
+                };
+                
+                utterance.onerror = function() {
+                    soundBtn.classList.remove('playing');
+                    soundBtn.innerHTML = '❌ Ошибка воспроизведения';
+                    setTimeout(function() {
+                        soundBtn.innerHTML = '🔊 Прослушать произношение';
+                    }, 2000);
+                };
+                
+                window.speechSynthesis.speak(utterance);
+            } else {
+                alert('Ваш браузер не поддерживает воспроизведение звука');
             }
-            
-            audioPlayer = new Audio(audioUrl);
-            
-            audioPlayer.oncanplaythrough = function() {
-                soundBtn.classList.remove('playing');
-                soundBtn.innerHTML = '🔊 Прослушать произношение';
-                audioPlayer.play();
-            };
-            
-            audioPlayer.onerror = function() {
-                soundBtn.classList.remove('playing');
-                soundBtn.innerHTML = '❌ Ошибка загрузки';
-                setTimeout(function() {
-                    soundBtn.innerHTML = '🔊 Прослушать произношение';
-                }, 2000);
-            };
-            
-            audioPlayer.onended = function() {
-                soundBtn.classList.remove('playing');
-                soundBtn.innerHTML = '🔊 Прослушать ещё раз';
-            };
-            
-            audioPlayer.load();
         }
 
         function checkAnswer(answerType) {
@@ -565,7 +549,7 @@ html_final = """<!DOCTYPE html>
 
                 createConfetti();
                 
-                // Auto-play pronunciation on correct answer
+                // Автоматически воспроизводим звук при правильном ответе
                 setTimeout(function() {
                     playAudio();
                 }, 500);
@@ -573,7 +557,7 @@ html_final = """<!DOCTYPE html>
                 setTimeout(function() {
                     currentIndex++;
                     updateDisplay();
-                }, 2000);
+                }, 2500);
             } else {
                 var wordDisplay = document.querySelector('.current-word');
                 wordDisplay.style.animation = 'none';
@@ -644,36 +628,12 @@ html_final = """<!DOCTYPE html>
             document.getElementById('mouseCharacter').style.bottom = '0px';
             document.getElementById('beeCharacter').style.bottom = '0px';
             
-            if (audioPlayer) {
-                audioPlayer.pause();
-                audioPlayer = null;
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
             }
             
             initGame();
         }
     </script>
 </body>
-</html>"""
-
-with open('phonics_game_final.html', 'w', encoding='utf-8') as f:
-    f.write(html_final)
-
-print("Финальная версия игры успешно создана!")
-print("Размер файла:", len(html_final), "символов")
-print("\nКлючевые улучшения:")
-print("1. Встроенное аудио без перехода на другие страницы")
-print("2. Использование Google Translate TTS для качественного произношения")
-print("3. Автоматическое воспроизведение при правильном ответе")
-print("4. Возможность повторного прослушивания")
-print("5. Индикатор загрузки во время воспроизведения")
-
- # Result 
-Финальная версия игры успешно создана!
-Размер файла: 21216 символов
-
-Ключевые улучшения:
-1. Встроенное аудио без перехода на другие страницы
-2. Использование Google Translate TTS для качественного произношения
-3. Автоматическое воспроизведение при правильном ответе
-4. Возможность повторного прослушивания
-5. Индикатор загрузки во время воспроизведения
+</html>
